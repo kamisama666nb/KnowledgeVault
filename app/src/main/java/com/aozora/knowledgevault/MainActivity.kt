@@ -193,11 +193,12 @@ class MainActivity : ComponentActivity() {
         }
     }
     
-    @Composable
-    fun AddDocumentScreen(
-        onBack: () -> Unit,
-        onSave: (String, String) -> Unit
-    ) {
+   @OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddDocumentScreen(
+    onBack: () -> Unit,
+    onSave: (String, String) -> Unit
+) {
         var title by remember { mutableStateOf("") }
         var content by remember { mutableStateOf("") }
         
