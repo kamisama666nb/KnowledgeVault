@@ -1,20 +1,29 @@
 package com.aozora.knowledgevault
 
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import com.aozora.knowledgevault.data.ai.AIConfig
 import com.aozora.knowledgevault.data.ai.OpenAICompatibleProvider
 import com.aozora.knowledgevault.data.database.AppDatabase
@@ -115,7 +124,6 @@ class MainActivity : ComponentActivity() {
                     DocumentViewModel(documentRepository, documentId)
                 }
                 val uiState by viewModel.uiState.collectAsState()
-                
                 DocumentScreen(
                     uiState = uiState,
                     onBack = { navController.popBackStack() },
@@ -191,29 +199,26 @@ class MainActivity : ComponentActivity() {
         }
     }
     
-   @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AddDocumentScreen(
-    onBack: () -> Unit,
-    onSave: (String, String) -> Unit
-) {
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun AddDocumentScreen(
+        onBack: () -> Unit,
+        onSave: (String, String) -> Unit
+    ) {
         var title by remember { mutableStateOf("") }
         var content by remember { mutableStateOf("") }
         
-        androidx.compose.material3.Scaffold(
+        Scaffold(
             topBar = {
-                androidx.compose.material3.TopAppBar(
-                    title = { androidx.compose.material3.Text("添加文档") },
+                TopAppBar(
+                    title = { Text("添加文档") },
                     navigationIcon = {
-                        androidx.compose.material3.IconButton(onClick = onBack) {
-                            androidx.compose.material3.Icon(
-                                androidx.compose.material.icons.Icons.Default.ArrowBack,
-                                "返回"
-                            )
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, "返回")
                         }
                     },
                     actions = {
-                        androidx.compose.material3.IconButton(
+                        IconButton(
                             onClick = { 
                                 if (title.isNotBlank() && content.isNotBlank()) {
                                     onSave(title, content)
@@ -221,36 +226,33 @@ fun AddDocumentScreen(
                             },
                             enabled = title.isNotBlank() && content.isNotBlank()
                         ) {
-                            androidx.compose.material3.Icon(
-                                androidx.compose.material.icons.Icons.Default.Check,
-                                "保存"
-                            )
+                            Icon(Icons.Default.Check, "保存")
                         }
                     }
                 )
             }
         ) { paddingValues ->
-            androidx.compose.foundation.layout.Column(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .androidx.compose.foundation.layout.padding(paddingValues)
-                    .androidx.compose.foundation.layout.padding(16.dp),
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+                    .padding(paddingValues)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                androidx.compose.material3.OutlinedTextField(
+                OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { androidx.compose.material3.Text("标题") },
+                    label = { Text("标题") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 
-                androidx.compose.material3.OutlinedTextField(
+                OutlinedTextField(
                     value = content,
                     onValueChange = { content = it },
-                    label = { androidx.compose.material3.Text("内容") },
+                    label = { Text("内容") },
                     modifier = Modifier
-                        .fillMaxWidth()
+                    .fillMaxWidth()
                         .weight(1f),
                     minLines = 10
                 )
@@ -258,3 +260,4 @@ fun AddDocumentScreen(
         }
     }
 }
+                
