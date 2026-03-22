@@ -1,0 +1,28 @@
+name: Fix Gradle Wrapper
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Gradle wrapper
+      run: |
+        # 下载gradle wrapper jar
+        mkdir -p gradle/wrapper
+        curl -L https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+        
+        # 设置gradlew可执行
+        chmod +x gradlew
+        
+        # 提交
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add gradle/wrapper/gradle-wrapper.jar
+        git add gradlew
+        git commit -m "Add gradle wrapper jar" || echo "No changes"
+        git push
