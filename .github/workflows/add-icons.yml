@@ -1,0 +1,44 @@
+name: Add App Icons
+
+on:
+  workflow_dispatch:
+
+jobs:
+  add-icons:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install ImageMagick
+      run: sudo apt-get update && sudo apt-get install -y imagemagick
+    
+    - name: Create launcher icons
+      run: |
+        # 创建目录
+        mkdir -p app/src/main/res/mipmap-hdpi
+        mkdir -p app/src/main/res/mipmap-mdpi
+        mkdir -p app/src/main/res/mipmap-xhdpi
+        mkdir -p app/src/main/res/mipmap-xxhdpi
+        mkdir -p app/src/main/res/mipmap-xxxhdpi
+        
+        # 生成简单的蓝色图标（不同尺寸）
+        convert -size 48x48 xc:"#1976D2" -gravity center -pointsize 24 -fill white -annotate +0+0 "KV" app/src/main/res/mipmap-mdpi/ic_launcher.png
+        convert -size 72x72 xc:"#1976D2" -gravity center -pointsize 36 -fill white -annotate +0+0 "KV" app/src/main/res/mipmap-hdpi/ic_launcher.png
+        convert -size 96x96 xc:"#1976D2" -gravity center -pointsize 48 -fill white -annotate +0+0 "KV" app/src/main/res/mipmap-xhdpi/ic_launcher.png
+        convert -size 144x144 xc:"#1976D2" -gravity center -pointsize 72 -fill white -annotate +0+0 "KV" app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+        convert -size 192x192 xc:"#1976D2" -gravity center -pointsize 96 -fill white -annotate +0+0 "KV" app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+        
+        # 圆形图标
+        convert -size 48x48 xc:"#1976D2" -gravity center -pointsize 24 -fill white -annotate +0+0 "KV" -alpha set -virtual-pixel transparent -channel A -blur 0x8 -threshold 50% app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+        convert -size 72x72 xc:"#1976D2" -gravity center -pointsize 36 -fill white -annotate +0+0 "KV" -alpha set -virtual-pixel transparent -channel A -blur 0x8 -threshold 50% app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+        convert -size 96x96 xc:"#1976D2" -gravity center -pointsize 48 -fill white -annotate +0+0 "KV" -alpha set -virtual-pixel transparent -channel A -blur 0x8 -threshold 50% app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+        convert -size 144x144 xc:"#1976D2" -gravity center -pointsize 72 -fill white -annotate +0+0 "KV" -alpha set -virtual-pixel transparent -channel A -blur 0x8 -threshold 50% app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+        convert -size 192x192 xc:"#1976D2" -gravity center -pointsize 96 -fill white -annotate +0+0 "KV" -alpha set -virtual-pixel transparent -channel A -blur 0x8 -threshold 50% app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+        
+        # 提交
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add app/src/main/res/mipmap-*/
+        git commit -m "Add launcher icons"
+        git push
