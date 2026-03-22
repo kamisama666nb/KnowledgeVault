@@ -26,8 +26,12 @@ class DocumentRepository(
     suspend fun getDocumentById(id: Long): DocumentEntity? = documentDao.getDocumentById(id)
     
     suspend fun getAllTags(): List<String> {
-        val allTagLists = documentDao.getAllTags()
-        return allTagLists.flatten().distinct().sorted()
+        // 获取所有文档，然后提取tags字段
+        val allDocuments = documentDao.getAllDocumentsForTags()
+        return allDocuments
+            .flatMap { it.tags } // 展平所有文档的tags列表
+            .distinct() // 去重
+            .sorted() // 排序
     }
     
     /**
