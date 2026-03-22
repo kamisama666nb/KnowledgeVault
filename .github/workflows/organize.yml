@@ -1,0 +1,60 @@
+name: Organize Files
+
+on:
+  workflow_dispatch:
+
+jobs:
+  organize:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Organize structure
+      run: |
+        # 创建目录
+        mkdir -p app/src/main/java/com/aozora/knowledgevault/{data/{ai,database,repository,rss},ui/{home,document,rss,settings,theme}}
+        mkdir -p app/src/main/res/values
+        mkdir -p gradle/wrapper
+        
+        # 移动文件
+        mv MainActivity.kt app/src/main/java/com/aozora/knowledgevault/ 2>/dev/null || true
+        
+        # Database
+        mv *Entity.kt *Dao.kt AppDatabase.kt Converters.kt app/src/main/java/com/aozora/knowledgevault/data/database/ 2>/dev/null || true
+        
+        # AI
+        mv AIProvider.kt OpenAICompatibleProvider.kt app/src/main/java/com/aozora/knowledgevault/data/ai/ 2>/dev/null || true
+        
+        # Repository
+        mv *Repository.kt app/src/main/java/com/aozora/knowledgevault/data/repository/ 2>/dev/null || true
+        
+        # RSS
+        mv RssService.kt *FeedEntity.kt *FeedDao.kt app/src/main/java/com/aozora/knowledgevault/data/rss/ 2>/dev/null || true
+        
+        # UI
+        mv HomeScreen.kt HomeViewModel.kt app/src/main/java/com/aozora/knowledgevault/ui/home/ 2>/dev/null || true
+        mv DocumentScreen.kt DocumentViewModel.kt app/src/main/java/com/aozora/knowledgevault/ui/document/ 2>/dev/null || true
+        mv RssScreen.kt RssViewModel.kt app/src/main/java/com/aozora/knowledgevault/ui/rss/ 2>/dev/null || true
+        mv SettingsScreen.kt app/src/main/java/com/aozora/knowledgevault/ui/settings/ 2>/dev/null || true
+        mv Theme.kt app/src/main/java/com/aozora/knowledgevault/ui/theme/ 2>/dev/null || true
+        
+        # Resources
+        mv strings.xml themes.xml app/src/main/res/values/ 2>/dev/null || true
+        mv AndroidManifest.xml app/src/main/ 2>/dev/null || true
+        
+        # Gradle
+        mv gradle.properties . 2>/dev/null || true
+        mv gradle-wrapper.properties gradle/wrapper/ 2>/dev/null || true
+        
+        # App gradle
+        [ -f "build.gradle.kts" ] && [ ! -f "app/build.gradle.kts" ] && cp build.gradle.kts app/ || true
+        
+        # Proguard
+        mv proguard-rules.pro app/ 2>/dev/null || true
+        
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add .
+        git commit -m "Auto-organize project structure" || true
+        git push
