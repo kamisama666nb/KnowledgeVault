@@ -25,8 +25,8 @@ interface DocumentDao {
     """)
     fun searchDocuments(query: String): Flow<List<DocumentEntity>>
     
-    @Query("SELECT DISTINCT tags FROM documents")
-    suspend fun getAllTags(): List<String>
+    @Query("SELECT * FROM documents")
+    suspend fun getAllDocumentsForTags(): List<DocumentEntity>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDocument(document: DocumentEntity): Long
