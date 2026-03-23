@@ -124,4 +124,257 @@ fun SettingsScreen(
                             Icon(
                                 Icons.Outlined.Info,
                                 null,
-                                tint = MaterialTheme.colorS
+                                tint = MaterialTheme.colorS                                null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                "配置AI服务后可使用自动摘要、智能标签等功能",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
+                    
+                    // API Key
+                    OutlinedTextField(
+                        value = apiKey,
+                        onValueChange = { apiKey = it },
+                        label = { Text("API Key") },
+                        placeholder = { Text("sk-...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = if (showApiKey) 
+                            VisualTransformation.None 
+                        else 
+                            PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { showApiKey = !showApiKey }) {
+                                Icon(
+                                    if (showApiKey) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                    if (showApiKey) "隐藏" else "显示",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
+                    )
+                    
+                    // Base URL
+                    OutlinedTextField(
+                        value = baseUrl,
+                        onValueChange = { baseUrl = it },
+                        label = { Text("API地址") },
+                        placeholder = { Text("https://api.openai.com/v1") },
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = { 
+                            Text(
+                                "可使用OpenAI兼容的API服务",
+                                style = MaterialTheme.typography.labelSmall
+                            ) 
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
+                    )
+                    
+                    // Model
+                    OutlinedTextField(
+                        value = model,
+                        onValueChange = { model = it },
+                        label = { Text("模型名称") },
+                        placeholder = { Text("gpt-3.5-turbo") },
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = { 
+                            Text(
+                                "如：gpt-3.5-turbo, gpt-4, deepseek-chat",
+                                style = MaterialTheme.typography.labelSmall
+                            ) 
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
+                    )
+                    
+                    // 保存按钮
+                    Button(
+                        onClick = {
+                            onSaveAIConfig(apiKey, baseUrl, model)
+                            showSaveSuccess = true
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = apiKey.isNotBlank()
+                    ) {
+                        Icon(Icons.Outlined.Save, null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("保存配置", fontSize = 16.sp)
+                    }
+                    
+                    // 快速预设
+                    Text(
+                        "快速预设",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AssistChip(
+                            onClick = {
+                                baseUrl = "https://api.openai.com/v1"
+                                model = "gpt-3.5-turbo"
+                            },
+                            label = { Text("OpenAI") },
+                            leadingIcon = { Icon(Icons.Outlined.Language, null, modifier = Modifier.size(16.dp)) }
+                        )
+                        
+                        AssistChip(
+                            onClick = {
+                                baseUrl = "https://api.deepseek.com/v1"
+                                model = "deepseek-chat"
+                            },
+                            label = { Text("Deepseek") },
+                            leadingIcon = { Icon(Icons.Outlined.Code, null, modifier = Modifier.size(16.dp)) }
+                        )
+                    }
+                }
+            }
+            
+            // 关于区
+            SettingsSection(
+                title = "关于",
+                icon = Icons.Outlined.Info,
+                expanded = expandedSection == "about",
+                onExpandChange = { expandedSection = if (it) "about" else "" }
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    InfoRow("版本", "1.0.0")
+                    InfoRow("作者", "Aozora")
+                    InfoRow("开源协议", "MIT License")
+                }
+            }
+            
+            // 高级设置
+            SettingsSection(
+                title = "高级",
+                icon = Icons.Outlined.Tune,
+                expanded = expandedSection == "advanced",
+                onExpandChange = { expandedSection = if (it) "advanced" else "" }
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(
+                        onClick = { /* TODO: 清除缓存 */ },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.CleaningServices, null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("清除缓存")
+                    }
+                    
+                    TextButton(
+                        onClick = { /* TODO: 导出数据 */ },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.Download, null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("导出数据")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsSection(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    expanded: Boolean,
+    onExpandChange: (Boolean) -> Unit,
+    content: @Composable () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+        ),
+        elevation = CardDefaults.cardElevation(0.dp)
+    ) {
+        Column {
+            // 标题栏
+            Surface(
+                onClick = { onExpandChange(!expanded) },
+                color = Color.Transparent
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            icon,
+                            null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                    
+                    Icon(
+                        if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                        null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    )
+                }
+            }
+            // 内容区
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Box(modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp)) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Normal
+        )
+    }
+}
