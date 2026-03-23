@@ -124,7 +124,6 @@ fun SettingsScreen(
                             Icon(
                                 Icons.Outlined.Info,
                                 null,
-                                tint = MaterialTheme.colorS                                null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
