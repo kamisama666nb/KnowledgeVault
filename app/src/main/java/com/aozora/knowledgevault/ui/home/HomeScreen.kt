@@ -4,7 +4,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,16 +16,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozora.knowledgevault.data.database.DocumentEntity
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +32,7 @@ fun HomeScreen(
     uiState: HomeUiState,
     onDocumentClick: (Long) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
-    onFilterChanged: (FilterMode) -> Unit,
+    onFilterChanged: (String) -> Unit,
     onToggleStar: (Long) -> Unit,
     onDeleteDocument: (Long) -> Unit,
     onAddDocument: () -> Unit,
@@ -43,87 +41,79 @@ fun HomeScreen(
 ) {
     var showFilterMenu by remember { mutableStateOf(false) }
     
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            // 简约顶栏
-            Surface(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                tonalElevation = 0.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "知识库",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Light,
-                            letterSpacing = 1.5.sp
-                        ),
-                        modifier = Modifier.padding(start = 16.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 渐变背景
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surface
+                        )
                     )
-                    
-                    Row {
-                        IconButton(onClick = { showFilterMenu = true }) {
-                            Icon(
-                                Icons.Outlined.FilterList, 
-                                "筛选",
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
-                        
-                        DropdownMenu(
-                            expanded = showFilterMenu,
-                            onDismissRequest = { showFilterMenu = false }
+                )
+        )
+        
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                // 毛玻璃顶栏
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    tonalElevation = 0.dp
+                ) {
+                    Column {
+                        // 顶部栏
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("所有文档") },
-                                onClick = {
-                                    onFilterChanged(FilterMode.ALL)
-                                    showFilterMenu = false
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.Description, null) }
+                            // 左侧：标题
+                            Text(
+                                "知识库",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Light,
+                                    letterSpacing = 2.sp
+                                ),
+                                modifier = Modifier.padding(start = 8.dp)
                             )
-                            DropdownMenuItem(
-                                text = { Text("已收藏") },
-                                onClick = {
-                                    onFilterChanged(FilterMode.STARRED)
-                                    showFilterMenu = false
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.Star, null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("已归档") },
-                                onClick = {
-                                    onFilterChanged(FilterMode.ARCHIVED)
-                                    showFilterMenu = false
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.Archive, null) }
-                            )
-                        }
-                        
-                        IconButton(onClick = onOpenRss) {
-                            Icon(
-                                Icons.Outlined.RssFeed, 
-                                "RSS",
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
-                        
-                        IconButton(onClick = onOpenSettings) {
-                            Icon(
-                                Icons.Outlined.Settings, 
-                                "设置",
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
-                    }
-                }
-            }
+                            
+                            // 右侧：功能按钮
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                // 筛选
+                                Box {
+                                    IconButton(onClick = { showFilterMenu = true }) {
+                                        Icon(
+                                            Icons.Outlined.FilterList,
+                                            "筛选",
+                                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                    
+                                    DropdownMenu(
+                                        expanded = showFilterMenu,
+                                        onDismissRequest = { showFilterMenu = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("全部") },
+                                            onClick = {
+                                                onFilterChanged("all")
+                                                showFilterMenu = false
+                                            },
+                                            leadingIcon = { Icon(Icons.Outlined.Description, null) }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("收藏") },
+                                            onClick = {
+              }
         },
         floatingActionButton = {
             FloatingActionButton(
