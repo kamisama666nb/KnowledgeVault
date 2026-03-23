@@ -157,28 +157,31 @@ class MainActivity : ComponentActivity() {
             }
             
             // 设置
-            composable("settings") {
-                SettingsScreen(
-                    onBack = { navController.popBackStack() },
-                    onSaveAIConfig = { apiKey, baseUrl, model ->
-                        val config = AIConfig(
-                            apiKey = apiKey,
-                            baseUrl = baseUrl,
-                            model = model
-                        )
-                        aiProvider = OpenAICompatibleProvider(config)
-                        
-                        // 重新初始化repositories
-                        documentRepository = DocumentRepository(database.documentDao(), aiProvider)
-                        rssFeedRepository = RssFeedRepository(
-                            database.rssFeedDao(),
-                            RssService(),
-                            documentRepository,
-                            aiProvider
-                        )
-                    }
-                )
-            }
+composable("settings") {
+    SettingsScreen(
+        onBack = { navController.popBackStack() },
+        currentApiKey = aiProvider?.let { /* TODO: 从provider获取 */ } ?: "",
+        currentBaseUrl = aiProvider?.let { /* TODO: 从provider获取 */ } ?: "",
+        currentModel = aiProvider?.let { /* TODO: 从provider获取 */ } ?: "",
+        onSaveAIConfig = { apiKey, baseUrl, model ->
+            val config = AIConfig(
+                apiKey = apiKey,
+                baseUrl = baseUrl,
+                model = model
+            )
+            aiProvider = OpenAICompatibleProvider(config)
+            
+            // 重新初始化repositories
+            documentRepository = DocumentRepository(database.documentDao(), aiProvider)
+            rssFeedRepository = RssFeedRepository(
+                database.rssFeedDao(),
+                RssService(),
+                documentRepository,
+                aiProvider
+            )
+        }
+    )
+}
             
             // 添加文档
             composable("addDocument") {
