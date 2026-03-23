@@ -113,109 +113,174 @@ fun HomeScreen(
                                         DropdownMenuItem(
                                             text = { Text("收藏") },
                                             onClick = {
-              }
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddDocument,
-                shape = CircleShape,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ) {
-                Icon(Icons.Outlined.Add, "新建")
+                                                onFilterChanged("starred")
+                                                showFilterMenu = false
+                                            },
+                                            leadingIcon = { Icon(Icons.Outlined.Star, null) }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("归档") },
+                                            onClick = {
+                                                onFilterChanged("archived")
+                                                showFilterMenu = false
+                                            },
+                                            leadingIcon = { Icon(Icons.Outlined.Archive, null) }
+                                        )
+                                    }
+                                }
+                                
+                                // RSS
+                                IconButton(onClick = onOpenRss) {
+                                    Icon(
+                                        Icons.Outlined.RssFeed,
+                                        "RSS",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
+                                
+                                // 设置
+                                IconButton(onClick = onOpenSettings) {
+                                    Icon(
+                                        Icons.Outlined.Settings,
+                                        "设置",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // 搜索框
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut()
+                        ) {
+                            OutlinedTextField(
+                                value = uiState.searchQuery,
+                                onValueChange = onSearchQueryChanged,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                placeholder = { 
+                                    Text(
+                                        "搜索知识...",
+                                        fontWeight = FontWeight.Light
+                                    ) 
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Search,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                    )
+                                },
+                                trailingIcon = {
+                                    if (uiState.searchQuery.isNotBlank()) {
+                                        IconButton(onClick = { onSearchQueryChanged("") }) {
+                                            Icon(
+                                                Icons.Outlined.Close,
+                                                "清除",
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                )
+                            )
+                        }
+                    }
+                }
+            },
+  floatingActionButton = {
+                // 弹性动画的FAB
+                val scale by animateFloatAsState(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
+                
+                FloatingActionButton(
+                    onClick = onAddDocument,
+                    modifier = Modifier.scale(scale),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(Icons.Outlined.Add, "添加", modifier = Modifier.size(28.dp))
+                }
             }
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // 搜索框
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = onSearchQueryChanged,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                placeholder = { 
-                    Text(
-                        "搜索知识...",
-                        style = MaterialTheme.typography.bodyMedium.copy(
+        ) { padding ->
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                    )
+                }
+            } else if (uiState.documents.isEmpty()) {
+                // 空状态
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Description,
+                            null,
+                            modifier = Modifier.size(80.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                        )
+                        Text(
+                            "还没有文档",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                             fontWeight = FontWeight.Light
                         )
-                    ) 
-                },
-                leadingIcon = { 
-                    Icon(
-                        Icons.Outlined.Search, 
-                        null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                    ) 
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                )
-            )
-            
-            // 内容区域
-            when {
-                uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
+                        Text(
+                            "点击右下角添加你的第一篇笔记",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            fontWeight = FontWeight.Light
+                        )
                     }
                 }
-                
-                uiState.documents.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.MenuBook,
-                                null,
-                                modifier = Modifier.size(72.dp).alpha(0.2f)
-                            )
-                            Text(
-                                text = if (uiState.searchQuery.isNotBlank()) 
-                                    "未找到相关内容" 
-                                else 
-                                    "开始你的知识旅程",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Light
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                            )
-                        }
-                    }
-                }
-                
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 88.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(
-                            items = uiState.documents,
-                            key = { it.id }
-                        ) { document ->
-                            DocumentItem(
-                                document = document,
-                                onClick = { onDocumentClick(document.id) },
-                                onToggleStar = { onToggleStar(document.id) },
-                                onDelete = { onDeleteDocument(document.id) }
-                            )
-                        }
+            } else {
+                // 文档列表
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = padding.calculateTopPadding() + 8.dp,
+                        bottom = padding.calculateBottomPadding() + 80.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = uiState.documents,
+                        key = { it.id }
+                    ) { document ->
+                        DocumentCard(
+                            document = document,
+                            onClick = { onDocumentClick(document.id) },
+                            onToggleStar = { onToggleStar(document.id) },
+                            onDelete = { onDeleteDocument(document.id) }
+                        )
                     }
                 }
             }
@@ -224,7 +289,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun DocumentItem(
+fun DocumentCard(
     document: DocumentEntity,
     onClick: () -> Unit,
     onToggleStar: () -> Unit,
@@ -232,119 +297,156 @@ fun DocumentItem(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     
+    // 入场动画
+    val scale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        )
+    )
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+            .scale(scale)
+            .animateContentSize(),
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 2.dp
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 头部：标题和菜单
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = document.title,
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    document.title,
+                    style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Normal
                     ),
-                    modifier = Modifier.weight(1f),
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
                 
-                Row {
-                    IconButton(onClick = onToggleStar) {
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
                         Icon(
-                            imageVector = if (document.isStarred) 
-                                Icons.Filled.Star 
-                            else 
-                                Icons.Outlined.StarBorder,
-                            contentDescription = "收藏",
-                            tint = if (document.isStarred) 
-                                Color(0xFFFFB74D)
-                            else 
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            Icons.Outlined.MoreVert,
+                            "更多",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
                     }
                     
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(Icons.Outlined.MoreHoriz, "更多")
-                        }
-                        
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("删除") },
-                                onClick = {
-                                    onDelete()
-                                    showMenu = false
-                                }
-                            )
-                        }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(if (document.isStarred) "取消收藏" else "收藏") },
+                            onClick = {
+                                onToggleStar()
+                                showMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    if (document.isStarred) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                    null
+                                )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("删除", color = MaterialTheme.colorScheme.error) },
+                            onClick = {
+                                onDelete()
+                                showMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.Delete,
+                                    null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        )
                     }
                 }
             }
             
-            document.summary?.let { summary ->
-                Spacer(modifier = Modifier.height(10.dp))
+            // 摘要
+            if (!document.summary.isNullOrBlank()) {
                 Text(
-                    text = summary,
+                    document.summary,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Light
+                        lineHeight = 22.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
-                    maxLines = 2,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            } else if (document.content.isNotBlank()) {
+                Text(
+                    document.content,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = 22.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             
-            if (document.tags.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            // 底部：标签和信息
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 标签
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
                     document.tags.take(3).forEach { tag ->
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
                         ) {
                             Text(
-                                text = tag,
+                                tag,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
                     }
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = formatDate(document.updatedAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
-                )
-                
-                Text(
-                    text = document.source,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
-                )
+                // 收藏星标
+                if (document.isStarred) {
+                    Icon(
+                        Icons.Filled.Star,
+                        "已收藏",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
             }
         }
     }
-}
-
-private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
-    return sdf.format(Date(timestamp))
 }
