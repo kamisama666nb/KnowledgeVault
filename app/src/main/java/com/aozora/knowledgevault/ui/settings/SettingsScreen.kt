@@ -1,164 +1,127 @@
 package com.aozora.knowledgevault.ui.settings
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onSaveAIConfig: (String, String, String) -> Unit
+    currentApiKey: String = "",
+    currentBaseUrl: String = "",
+    currentModel: String = "",
+    onSaveAIConfig: (apiKey: String, baseUrl: String, model: String) -> Unit
 ) {
-    var apiKey by remember { mutableStateOf("") }
-    var baseUrl by remember { mutableStateOf("https://api.openai.com/v1") }
-    var model by remember { mutableStateOf("gpt-3.5-turbo") }
+    var apiKey by remember { mutableStateOf(currentApiKey) }
+    var baseUrl by remember { mutableStateOf(currentBaseUrl.ifBlank { "https://api.openai.com/v1" }) }
+    var model by remember { mutableStateOf(currentModel.ifBlank { "gpt-3.5-turbo" }) }
+    
+    var showApiKey by remember { mutableStateOf(false) }
     var showSaveSuccess by remember { mutableStateOf(false) }
+    
+    var expandedSection by remember { mutableStateOf("ai") } // ai, about, advanced
+    
+    // 保存成功提示
+    LaunchedEffect(showSaveSuccess) {
+        if (showSaveSuccess) {
+            kotlinx.coroutines.delay(2000)
+            showSaveSuccess = false
+        }
+    }
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("设置") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "返回")
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                tonalElevation = 0.dp
+            ) {
+                TopAppBar(
+                    title = { 
+                        Text(
+                            "设置",
+                            fontWeight = FontWeight.Light,
+                            letterSpacing = 1.5.sp
+                        ) 
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Outlined.ArrowBack, "返回")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
+                )
+            }
+        },
+        snackbarHost = {
+            // 保存成功提示
+            AnimatedVisibility(
+                visible = showSaveSuccess,
+                enter = slideInVertically() + fadeIn(),
+                exit = slideOutVertically() + fadeOut()
+            ) {
+                Snackbar(
+                    modifier = Modifier.padding(16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(20.dp))
+                        Text("设置已保存", fontWeight = FontWeight.Normal)
                     }
                 }
-            )
+            }
         }
-    ) { paddingValues ->
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "AI配置",
-                style = MaterialTheme.typography.titleLarge
-            )
-            
-            Text(
-                text = "配置你的AI API密钥，用于自动生成摘要、标签和智能问答",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                label = { Text("API Key") },
-                placeholder = { Text("sk-...") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            
-            OutlinedTextField(
-                value = baseUrl,
-                onValueChange = { baseUrl = it },
-                label = { Text("Base URL") },
-                placeholder = { Text("https://api.openai.com/v1") },
-                modifier = Modifier.fillMaxWidth(),
-                supportingText = { 
-                    Text("支持OpenAI、Deepseek、Qwen等兼容API") 
-                },
-                singleLine = true
-            )
-            
-            OutlinedTextField(
-                value = model,
-                onValueChange = { model = it },
-                label = { Text("模型") },
-                placeholder = { Text("gpt-3.5-turbo") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Button(
-                onClick = {
-                    onSaveAIConfig(apiKey, baseUrl, model)
-                    showSaveSuccess = true
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = apiKey.isNotBlank()
+            // AI配置区
+            SettingsSection(
+                title = "AI 增强",
+                icon = Icons.Outlined.AutoAwesome,
+                expanded = expandedSection == "ai",
+                onExpandChange = { expandedSection = if (it) "ai" else "" }
             ) {
-                Icon(Icons.Default.Save, null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("保存配置")
-            }
-            
-            Divider()
-            
-            Text(
-                text = "关于",
-                style = MaterialTheme.typography.titleLarge
-            )
-            
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "KnowledgeVault",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "版本: 1.0.0",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "个人知识库管理助手",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "功能特性",
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                    Text("• 文档管理和全文搜索", style = MaterialTheme.typography.bodySmall)
-                    Text("• AI自动摘要和标签", style = MaterialTheme.typography.bodySmall)
-                    Text("• RSS订阅和内容聚合", style = MaterialTheme.typography.bodySmall)
-                    Text("• 智能问答", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-    }
-    
-    if (showSaveSuccess) {
-        AlertDialog(
-            onDismissRequest = { showSaveSuccess = false },
-            title = { Text("保存成功") },
-            text = { Text("AI配置已保存") },
-            confirmButton = {
-                TextButton(onClick = { showSaveSuccess = false }) {
-                    Text("确定")
-                }
-            }
-        )
-    }
-}
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // 说明
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Info,
+                                null,
+                                tint = MaterialTheme.colorS
