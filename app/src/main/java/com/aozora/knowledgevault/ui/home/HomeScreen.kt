@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -32,7 +33,7 @@ fun HomeScreen(
     uiState: HomeUiState,
     onDocumentClick: (Long) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
-    onFilterChanged: (String) -> Unit,
+    onFilterChanged: (FilterMode) -> Unit,
     onToggleStar: (Long) -> Unit,
     onDeleteDocument: (Long) -> Unit,
     onAddDocument: () -> Unit,
@@ -105,15 +106,15 @@ fun HomeScreen(
                                         DropdownMenuItem(
                                             text = { Text("全部") },
                                             onClick = {
-                                                onFilterChanged("all")
+                                                onFilterChanged(FilterMode.ALL)
                                                 showFilterMenu = false
                                             },
                                             leadingIcon = { Icon(Icons.Outlined.Description, null) }
                                         )
                                         DropdownMenuItem(
                                             text = { Text("收藏") },
-                                            onClick = {
-                                                onFilterChanged("starred")
+       onClick = {
+                                                onFilterChanged(FilterMode.STARRED)
                                                 showFilterMenu = false
                                             },
                                             leadingIcon = { Icon(Icons.Outlined.Star, null) }
@@ -121,7 +122,7 @@ fun HomeScreen(
                                         DropdownMenuItem(
                                             text = { Text("归档") },
                                             onClick = {
-                                                onFilterChanged("archived")
+                                                onFilterChanged(FilterMode.ARCHIVED)
                                                 showFilterMenu = false
                                             },
                                             leadingIcon = { Icon(Icons.Outlined.Archive, null) }
@@ -196,168 +197,8 @@ fun HomeScreen(
                     }
                 }
             },
-  floatingActionButton = {
-                // 弹性动画的FAB
-                val scale by animateFloatAsState(
-                    targetValue = 1f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
-                )
-                
-                FloatingActionButton(
-                    onClick = onAddDocument,
-                    modifier = Modifier.scale(scale),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ) {
-                    Icon(Icons.Outlined.Add, "添加", modifier = Modifier.size(28.dp))
-                }
-            }
-        ) { padding ->
-            if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                    )
-                }
-            } else if (uiState.documents.isEmpty()) {
-                // 空状态
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            Icons.Outlined.Description,
-                            null,
-                            modifier = Modifier.size(80.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                        )
-                        Text(
-                            "还没有文档",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                            fontWeight = FontWeight.Light
-                        )
-                        Text(
-                            "点击右下角添加你的第一篇笔记",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            fontWeight = FontWeight.Light
-                        )
-                    }
-                }
-            } else {
-                // 文档列表
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = padding.calculateTopPadding() + 8.dp,
-                        bottom = padding.calculateBottomPadding() + 80.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(
-                        items = uiState.documents,
-                        key = { it.id }
-                    ) { document ->
-                        DocumentCard(
-                            document = document,
-                            onClick = { onDocumentClick(document.id) },
-                            onToggleStar = { onToggleStar(document.id) },
-                            onDelete = { onDeleteDocument(document.id) }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
-@Composable
-fun DocumentCard(
-    document: DocumentEntity,
-    onClick: () -> Unit,
-    onToggleStar: () -> Unit,
-    onDelete: () -> Unit
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-    
-    // 入场动画
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        )
-    )
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .animateContentSize(),
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 2.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // 头部：标题和菜单
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    document.title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Normal
-                    ),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                Box {
-                    IconButton(
-                        onClick = { showMenu = true },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            Icons.Outlined.MoreVert,
-                            "更多",
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                        )
-                    }
-                    
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
                         DropdownMenuItem(
                             text = { Text(if (document.isStarred) "取消收藏" else "收藏") },
                             onClick = {
@@ -387,9 +228,9 @@ fun DocumentCard(
                         )
                     }
                 }
-            }
-            
-            // 摘要
+}
+
+// 摘要
             if (!document.summary.isNullOrBlank()) {
                 Text(
                     document.summary,
@@ -437,6 +278,7 @@ fun DocumentCard(
                         }
                     }
                 }
+                
                 // 收藏星标
                 if (document.isStarred) {
                     Icon(
