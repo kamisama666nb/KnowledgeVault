@@ -37,9 +37,8 @@ fun SettingsScreen(
     var showApiKey by remember { mutableStateOf(false) }
     var showSaveSuccess by remember { mutableStateOf(false) }
     
-    var expandedSection by remember { mutableStateOf("ai") } // ai, about, advanced
+    var expandedSection by remember { mutableStateOf("ai") }
     
-    // 保存成功提示
     LaunchedEffect(showSaveSuccess) {
         if (showSaveSuccess) {
             kotlinx.coroutines.delay(2000)
@@ -73,7 +72,6 @@ fun SettingsScreen(
             }
         },
         snackbarHost = {
-            // 保存成功提示
             AnimatedVisibility(
                 visible = showSaveSuccess,
                 enter = slideInVertically() + fadeIn(),
@@ -104,7 +102,6 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // AI配置区
             SettingsSection(
                 title = "AI 增强",
                 icon = Icons.Outlined.AutoAwesome,
@@ -112,7 +109,6 @@ fun SettingsScreen(
                 onExpandChange = { expandedSection = if (it) "ai" else "" }
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    // 说明
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
@@ -124,7 +120,6 @@ fun SettingsScreen(
                             Icon(
                                 Icons.Outlined.Info,
                                 null,
-                                tint = MaterialTheme.colorS                                null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -137,7 +132,6 @@ fun SettingsScreen(
                         }
                     }
                     
-                    // API Key
                     OutlinedTextField(
                         value = apiKey,
                         onValueChange = { apiKey = it },
@@ -161,7 +155,6 @@ fun SettingsScreen(
                         singleLine = true
                     )
                     
-                    // Base URL
                     OutlinedTextField(
                         value = baseUrl,
                         onValueChange = { baseUrl = it },
@@ -178,7 +171,6 @@ fun SettingsScreen(
                         singleLine = true
                     )
                     
-                    // Model
                     OutlinedTextField(
                         value = model,
                         onValueChange = { model = it },
@@ -195,7 +187,6 @@ fun SettingsScreen(
                         singleLine = true
                     )
                     
-                    // 保存按钮
                     Button(
                         onClick = {
                             onSaveAIConfig(apiKey, baseUrl, model)
@@ -212,7 +203,6 @@ fun SettingsScreen(
                         Text("保存配置", fontSize = 16.sp)
                     }
                     
-                    // 快速预设
                     Text(
                         "快速预设",
                         style = MaterialTheme.typography.labelMedium,
@@ -244,7 +234,6 @@ fun SettingsScreen(
                 }
             }
             
-            // 关于区
             SettingsSection(
                 title = "关于",
                 icon = Icons.Outlined.Info,
@@ -258,7 +247,6 @@ fun SettingsScreen(
                 }
             }
             
-            // 高级设置
             SettingsSection(
                 title = "高级",
                 icon = Icons.Outlined.Tune,
@@ -267,7 +255,7 @@ fun SettingsScreen(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(
-                        onClick = { /* TODO: 清除缓存 */ },
+                        onClick = { },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Outlined.CleaningServices, null, modifier = Modifier.size(20.dp))
@@ -276,7 +264,7 @@ fun SettingsScreen(
                     }
                     
                     TextButton(
-                        onClick = { /* TODO: 导出数据 */ },
+                        onClick = { },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Outlined.Download, null, modifier = Modifier.size(20.dp))
@@ -289,7 +277,6 @@ fun SettingsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsSection(
     title: String,
@@ -307,7 +294,6 @@ fun SettingsSection(
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column {
-            // 标题栏
             Surface(
                 onClick = { onExpandChange(!expanded) },
                 color = Color.Transparent
@@ -344,7 +330,7 @@ fun SettingsSection(
                     )
                 }
             }
-            // 内容区
+            
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically() + fadeIn(),
