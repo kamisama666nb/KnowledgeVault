@@ -1,12 +1,14 @@
-package com.aozora.knowledgevault.ui.settings
+package com.aozora.knowledgevault.ui.home
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -14,353 +16,440 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aozora.knowledgevault.data.database.DocumentEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    onBack: () -> Unit,
-    currentApiKey: String = "",
-    currentBaseUrl: String = "",
-    currentModel: String = "",
-    onSaveAIConfig: (apiKey: String, baseUrl: String, model: String) -> Unit
+fun HomeScreen(
+    uiState: HomeUiState,
+    onDocumentClick: (Long) -> Unit,
+    onSearchQueryChanged: (String) -> Unit,
+    onFilterChanged: (FilterMode) -> Unit,
+    onToggleStar: (Long) -> Unit,
+    onDeleteDocument: (Long) -> Unit,
+    onAddDocument: () -> Unit,
+    onOpenRss: () -> Unit,
+    onOpenSettings: () -> Unit
 ) {
-    var apiKey by remember { mutableStateOf(currentApiKey) }
-    var baseUrl by remember { mutableStateOf(currentBaseUrl.ifBlank { "https://api.openai.com/v1" }) }
-    var model by remember { mutableStateOf(currentModel.ifBlank { "gpt-3.5-turbo" }) }
+    var showFilterMenu by remember { mutableStateOf(false) }
     
-    var showApiKey by remember { mutableStateOf(false) }
-    var showSaveSuccess by remember { mutableStateOf(false) }
-    
-    var expandedSection by remember { mutableStateOf("ai") }
-    
-    LaunchedEffect(showSaveSuccess) {
-        if (showSaveSuccess) {
-            kotlinx.coroutines.delay(2000)
-            showSaveSuccess = false
-        }
-    }
-    
-    Scaffold(
-        topBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                tonalElevation = 0.dp
-            ) {
-                TopAppBar(
-                    title = { 
-                        Text(
-                            "设置",
-                            fontWeight = FontWeight.Light,
-                            letterSpacing = 1.5.sp
-                        ) 
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Outlined.ArrowBack, "返回")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
-                )
-            }
-        },
-        snackbarHost = {
-            AnimatedVisibility(
-                visible = showSaveSuccess,
-                enter = slideInVertically() + fadeIn(),
-                exit = slideOutVertically() + fadeOut()
-            ) {
-                Snackbar(
-                    modifier = Modifier.padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(20.dp))
-                        Text("设置已保存", fontWeight = FontWeight.Normal)
-                    }
-                }
-            }
-        }
-    ) { padding ->
-        Column(
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 渐变背景
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            SettingsSection(
-                title = "AI 增强",
-                icon = Icons.Outlined.AutoAwesome,
-                expanded = expandedSection == "ai",
-                onExpandChange = { expandedSection = if (it) "ai" else "" }
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                    ) {
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surface
+                        )
+                    )
+                )
+        )
+        
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                // 毛玻璃顶栏
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    tonalElevation = 0.dp
+                ) {
+                    Column {
+                        // 顶部栏
                         Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                Icons.Outlined.Info,
-                                null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            // 左侧：标题
                             Text(
-                                "配置AI服务后可使用自动摘要、智能标签等功能",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                lineHeight = 18.sp
+                                "知识库",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Light,
+                                    letterSpacing = 2.sp
+                                ),
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                            
+                            // 右侧：功能按钮
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                // 筛选
+                                Box {
+                                    IconButton(onClick = { showFilterMenu = true }) {
+                                        Icon(
+                                            Icons.Outlined.FilterList,
+                                            "筛选",
+                                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                    
+                                    DropdownMenu(
+                                        expanded = showFilterMenu,
+                                        onDismissRequest = { showFilterMenu = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("全部") },
+                                            onClick = {
+                                                onFilterChanged(FilterMode.ALL)
+                                                showFilterMenu = false
+                                            },
+                                            leadingIcon = { Icon(Icons.Outlined.Description, null) }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("收藏") },
+                                            onClick = {
+                                                onFilterChanged(FilterMode.STARRED)
+                                                showFilterMenu = false
+                                            },
+                                            leadingIcon = { Icon(Icons.Outlined.Star, null) }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("归档") },
+                                            onClick = {
+                                                onFilterChanged(FilterMode.ARCHIVED)
+                                                showFilterMenu = false
+                                            },
+                                            leadingIcon = { Icon(Icons.Outlined.Archive, null) }
+                                        )
+                                    }
+                                }
+                                
+                                // RSS
+                                IconButton(onClick = onOpenRss) {
+                                    Icon(
+                                        Icons.Outlined.RssFeed,
+                                        "RSS",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
+                                
+                                // 设置
+                                IconButton(onClick = onOpenSettings) {
+                                    Icon(
+                                        Icons.Outlined.Settings,
+                                        "设置",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // 搜索框
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut()
+                        ) {
+                            OutlinedTextField(
+                                value = uiState.searchQuery,
+                                onValueChange = onSearchQueryChanged,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                placeholder = { 
+                                    Text(
+                                        "搜索知识...",
+                                        fontWeight = FontWeight.Light
+                                    ) 
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Search,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                    )
+                                },
+                                trailingIcon = {
+                                    if (uiState.searchQuery.isNotBlank()) {
+                                        IconButton(onClick = { onSearchQueryChanged("") }) {
+                                            Icon(
+                                                Icons.Outlined.Close,
+                                                "清除",
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                )
                             )
                         }
                     }
-                    
-                    OutlinedTextField(
-                        value = apiKey,
-                        onValueChange = { apiKey = it },
-                        label = { Text("API Key") },
-                        placeholder = { Text("sk-...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = if (showApiKey) 
-                            VisualTransformation.None 
-                        else 
-                            PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { showApiKey = !showApiKey }) {
-                                Icon(
-                                    if (showApiKey) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                    if (showApiKey) "隐藏" else "显示",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
-                    )
-                    
-                    OutlinedTextField(
-                        value = baseUrl,
-                        onValueChange = { baseUrl = it },
-                        label = { Text("API地址") },
-                        placeholder = { Text("https://api.openai.com/v1") },
-                        modifier = Modifier.fillMaxWidth(),
-                        supportingText = { 
-                            Text(
-                                "可使用OpenAI兼容的API服务",
-                                style = MaterialTheme.typography.labelSmall
-                            ) 
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
-                    )
-                    
-                    OutlinedTextField(
-                        value = model,
-                        onValueChange = { model = it },
-                        label = { Text("模型名称") },
-                        placeholder = { Text("gpt-3.5-turbo") },
-                        modifier = Modifier.fillMaxWidth(),
-                        supportingText = { 
-                            Text(
-                                "如：gpt-3.5-turbo, gpt-4, deepseek-chat",
-                                style = MaterialTheme.typography.labelSmall
-                            ) 
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
-                    )
-                    
-                    Button(
-                        onClick = {
-                            onSaveAIConfig(apiKey, baseUrl, model)
-                            showSaveSuccess = true
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        enabled = apiKey.isNotBlank()
-                    ) {
-                        Icon(Icons.Outlined.Save, null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("保存配置", fontSize = 16.sp)
-                    }
-                    
-                    Text(
-                        "快速预设",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        AssistChip(
-                            onClick = {
-                                baseUrl = "https://api.openai.com/v1"
-                                model = "gpt-3.5-turbo"
-                            },
-                            label = { Text("OpenAI") },
-                            leadingIcon = { Icon(Icons.Outlined.Language, null, modifier = Modifier.size(16.dp)) }
-                        )
-                        
-                        AssistChip(
-                            onClick = {
-                                baseUrl = "https://api.deepseek.com/v1"
-                                model = "deepseek-chat"
-                            },
-                            label = { Text("Deepseek") },
-                            leadingIcon = { Icon(Icons.Outlined.Code, null, modifier = Modifier.size(16.dp)) }
-                        )
-                    }
                 }
-            }
-            
-            SettingsSection(
-                title = "关于",
-                icon = Icons.Outlined.Info,
-                expanded = expandedSection == "about",
-                onExpandChange = { expandedSection = if (it) "about" else "" }
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    InfoRow("版本", "1.0.0")
-                    InfoRow("作者", "Aozora")
-                    InfoRow("开源协议", "MIT License")
-                }
-            }
-            
-            SettingsSection(
-                title = "高级",
-                icon = Icons.Outlined.Tune,
-                expanded = expandedSection == "advanced",
-                onExpandChange = { expandedSection = if (it) "advanced" else "" }
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(
-                        onClick = { },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Outlined.CleaningServices, null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("清除缓存")
-                    }
-                    
-                    TextButton(
-                        onClick = { },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Outlined.Download, null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("导出数据")
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SettingsSection(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    expanded: Boolean,
-    onExpandChange: (Boolean) -> Unit,
-    content: @Composable () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
-        ),
-        elevation = CardDefaults.cardElevation(0.dp)
-    ) {
-        Column {
-            Surface(
-                onClick = { onExpandChange(!expanded) },
-                color = Color.Transparent
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            },
+            floatingActionButton = {
+                // 弹性动画的FAB
+                val scale by animateFloatAsState(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
+                
+                FloatingActionButton(
+                    onClick = onAddDocument,
+                    modifier = Modifier.scale(scale),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Icon(Icons.Outlined.Add, "添加", modifier = Modifier.size(28.dp))
+                }
+            }
+        ) { padding ->
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                    )
+                }
+            } else if (uiState.documents.isEmpty()) {
+                // 空状态
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Icon(
-                            icon,
+                            Icons.Outlined.Description,
                             null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(80.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                         )
                         Text(
-                            title,
+                            "还没有文档",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Normal
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            fontWeight = FontWeight.Light
+                        )
+                        Text(
+                            "点击右下角添加你的第一篇笔记",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            fontWeight = FontWeight.Light
                         )
                     }
-                    
-                    Icon(
-                        if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                        null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                    )
                 }
-            }
-            
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Box(modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp)) {
-                    content()
+            } else {
+                // 文档列表
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = padding.calculateTopPadding() + 8.dp,
+                        bottom = padding.calculateBottomPadding() + 80.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = uiState.documents,
+                        key = { it.id }
+                    ) { document ->
+                        DocumentCard(
+                            document = document,
+                            onClick = { onDocumentClick(document.id) },
+                            onToggleStar = { onToggleStar(document.id) },
+                            onDelete = { onDeleteDocument(document.id) }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InfoRow(label: String, value: String) {
-    Row(
+fun DocumentCard(
+    document: DocumentEntity,
+    onClick: () -> Unit,
+    onToggleStar: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    
+    // 入场动画
+    val scale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        )
+    )
+    
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .scale(scale)
+            .animateContentSize(),
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 2.dp
+        )
     ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-        Text(
-            value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Normal
-        )
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 头部：标题和菜单
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    document.title,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Normal
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.MoreVert,
+                            "更多",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        )
+                    }
+                    
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(if (document.isStarred) "取消收藏" else "收藏") },
+                            onClick = {
+                                onToggleStar()
+                                showMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    if (document.isStarred) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                    null
+                                )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("删除", color = MaterialTheme.colorScheme.error) },
+                            onClick = {
+                                onDelete()
+                                showMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.Delete,
+                                    null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+            
+            // 摘要
+            if (!document.summary.isNullOrBlank()) {
+                Text(
+                    document.summary,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = 22.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            } else if (document.content.isNotBlank()) {
+                Text(
+                    document.content,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = 22.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            
+            // 底部：标签和信息
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 标签
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    document.tags.take(3).forEach { tag ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                        ) {
+                            Text(
+                                tag,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+                }
+                
+                // 收藏星标
+                if (document.isStarred) {
+                    Icon(
+                        Icons.Filled.Star,
+                        "已收藏",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+        }
     }
 }
